@@ -1,6 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_socket_io/flutter_socket_io.dart';
 import 'package:flutter_socket_io/socket_io_manager.dart';
+
+import '../widgets/drawer.dart';
+import '../widgets/bottom-app-bar.dart';
+import '../models/room_list.model.dart';
+import '../services/room.service.dart';
 
 class PrivateMessage extends StatefulWidget {
   @override
@@ -9,92 +16,70 @@ class PrivateMessage extends StatefulWidget {
 
 class _PrivateMessage extends State<PrivateMessage> {
   SocketIO socket =
-      SocketIOManager().createSocketIO("http://192.168.8.102:3001", '/chat');
+      SocketIOManager().createSocketIO(DotEnv().env['SOCKET_URL'], '/chat');
+  var privaterooms = new List<RoomList>();
 
   @override
   void initState() {
     super.initState();
     _onInitSocketIO();
+    _getRooms();
   }
 
   void _onInitSocketIO() {
     socket.init();
     socket.connect();
-    String jsonData =
-        '{"username": "Angga Bahctiar", "userId": 1, "socketId": "chat/mmaladmLJANJNdanka"}';
-    socket.sendMessage('activated', jsonData, _onActivated);
   }
 
-  void _onActivated(dynamic response) {
-    print(response);
+  void _getRooms() {
+    RoomService().getAllRooms().then((res) {
+      setState(() {
+        Iterable list = json.decode(res.body);
+        privaterooms = list.map((model) => RoomList.fromJson(model)).toList();
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(
-                  image: DecorationImage(
-                      image: new NetworkImage(
-                          'https://vancouver.ca/images/cov/feature/corp-plan-downtown-landing-image.jpg'),
-                      fit: BoxFit.cover)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text("My Profile"),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            new Divider(
-              color: Colors.grey,
-              thickness: 0.2,
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            new Divider(
-              color: Colors.grey,
-              thickness: 0.2,
-            ),
-          ],
-        ),
-      ),
+      drawer: new DrawerWidget(),
       appBar: AppBar(
         title: Text('KreatifChat'),
+        actions: <Widget>[
+          IconButton(icon: Icon(Icons.search), onPressed: () {})
+        ],
       ),
-      body: Center(
-        child: Text('This will be the main chat list'),
+      body: ListView.separated(
+        itemCount: privaterooms.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).platform == TargetPlatform.iOS
+                  ? Colors.blue
+                  : Colors.yellow,
+              child: Text(
+                privaterooms[index].name.substring(0, 1).toUpperCase(),
+                style: TextStyle(color: Colors.black),
+              ),
+            ),
+            title: Text(privaterooms[index].name),
+          );
+        },
+        separatorBuilder: (context, index) {
+          return Divider(
+            color: Colors.grey,
+            thickness: 0.2,
+          );
+        },
       ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        child: Container(
-            height: 65.0,
-            child: BottomNavigationBar(
-              items: const <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.chat_bubble), title: Text('Private')),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.group_work), title: Text('Group')),
-                // BottomNavigationBarItem(
-                //     icon: Icon(Icons.contacts), title: Text('Contacts')),
-                // BottomNavigationBarItem(
-                //     icon: Icon(Icons.group), title: Text('Groups'))
-              ],
-            )),
-      ),
+      bottomNavigationBar: BottomAppBarWidget(),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Tap here to new message',
         child: Icon(Icons.add),
-        onPressed: () {},
+        onPressed: () {
+          Navigator.pushNamed(context, '/chat');
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

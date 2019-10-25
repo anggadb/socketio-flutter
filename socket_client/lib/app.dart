@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'screens/private_message.dart';
-import 'screens/chat.dart';
 
 class MyApp extends StatelessWidget {
   final _routes = <String, WidgetBuilder>{
-    '/private': (BuildContext context) => PrivateMessage(),
-    '/chat': (BuildContext context) => Chat()
+    '/private': (BuildContext context) => PrivateMessage()
   };
 
   @override

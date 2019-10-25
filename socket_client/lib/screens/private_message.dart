@@ -8,6 +8,7 @@ import '../widgets/drawer.dart';
 import '../widgets/bottom-app-bar.dart';
 import '../models/room_list.model.dart';
 import '../services/room.service.dart';
+import 'package:socket_client/screens/chat.dart';
 
 class PrivateMessage extends StatefulWidget {
   @override
@@ -32,10 +33,11 @@ class _PrivateMessage extends State<PrivateMessage> {
   }
 
   void _getRooms() {
-    RoomService().getAllRooms().then((res) {
+    RoomService().getPrivateRooms(1).then((res) {
       setState(() {
         Iterable list = json.decode(res.body);
         privaterooms = list.map((model) => RoomList.fromJson(model)).toList();
+        print(privaterooms);
       });
     });
   }
@@ -50,36 +52,36 @@ class _PrivateMessage extends State<PrivateMessage> {
           IconButton(icon: Icon(Icons.search), onPressed: () {})
         ],
       ),
-      body: ListView.separated(
-        itemCount: privaterooms.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).platform == TargetPlatform.iOS
-                  ? Colors.blue
-                  : Colors.yellow,
-              child: Text(
-                privaterooms[index].name.substring(0, 1).toUpperCase(),
-                style: TextStyle(color: Colors.black),
-              ),
-            ),
-            title: Text(privaterooms[index].name),
-          );
-        },
-        separatorBuilder: (context, index) {
-          return Divider(
-            color: Colors.grey,
-            thickness: 0.2,
-          );
-        },
-      ),
+      body: ListView.builder(
+          itemCount: privaterooms.length,
+          itemBuilder: (context, index) {
+            return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor:
+                      Theme.of(context).platform == TargetPlatform.iOS
+                          ? Colors.blue
+                          : Colors.yellow,
+                  child: Text(
+                    privaterooms[index].name.substring(0, 1).toUpperCase(),
+                    style: TextStyle(color: Colors.black),
+                  ),
+                ),
+                title: Text(privaterooms[index].name),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Chat(
+                                arguments: privaterooms[index].id,
+                                roomName: privaterooms[index].name,
+                              )));
+                });
+          }),
       bottomNavigationBar: BottomAppBarWidget(),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Tap here to new message',
         child: Icon(Icons.add),
-        onPressed: () {
-          Navigator.pushNamed(context, '/chat');
-        },
+        onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

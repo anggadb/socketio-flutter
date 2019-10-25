@@ -28,8 +28,14 @@ class _PrivateMessage extends State<PrivateMessage> {
   }
 
   void _onInitSocketIO() {
+    var activeUser = {
+      "id": int.parse(DotEnv().env['ACTIVE_ID']),
+      "username": DotEnv().env['ACTIVE_USERNAME']
+    };
     socket.init();
     socket.connect();
+    socket.init();
+    socket.sendMessage('activated', activeUser.toString());
   }
 
   void _getRooms() {

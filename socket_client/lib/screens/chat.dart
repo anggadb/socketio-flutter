@@ -41,7 +41,7 @@ class _ChatState extends State<Chat> {
 
   void _onTyping() {
     socket.init();
-    socket.sendMessage('typing', ['Angga Bachtiar']);
+    socket.sendMessage('typing', '{"username": "Angga Bachtiar"}');
   }
 
   Widget _nipLocator(int sender, String text) {

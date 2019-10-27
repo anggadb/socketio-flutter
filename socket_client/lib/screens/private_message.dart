@@ -28,22 +28,20 @@ class _PrivateMessage extends State<PrivateMessage> {
   }
 
   void _onInitSocketIO() {
-    var activeUser = {
-      "id": int.parse(DotEnv().env['ACTIVE_ID']),
-      "username": DotEnv().env['ACTIVE_USERNAME']
-    };
-    socket.init();
-    socket.connect();
-    socket.init();
-    socket.sendMessage('activated', activeUser.toString());
+    socket.sendMessage(
+        'activated',
+        '{"userId": "' +
+            DotEnv().env['ACTIVE_ID'] +
+            '", "username": "' +
+            DotEnv().env['ACTIVE_USERNAME'] +
+            '"}');
   }
 
   void _getRooms() {
-    RoomService().getPrivateRooms(1).then((res) {
+    RoomService().getPrivateRooms(DotEnv().env['ACTIVE_ID']).then((res) {
       setState(() {
         Iterable list = json.decode(res.body);
         privaterooms = list.map((model) => RoomList.fromJson(model)).toList();
-        print(privaterooms);
       });
     });
   }
@@ -78,9 +76,9 @@ class _PrivateMessage extends State<PrivateMessage> {
                       context,
                       MaterialPageRoute(
                           builder: (context) => Chat(
-                                arguments: privaterooms[index].id,
-                                roomName: privaterooms[index].name,
-                              )));
+                              arguments: privaterooms[index].id,
+                              roomName: privaterooms[index].name,
+                              userId: privaterooms[index].userId)));
                 });
           }),
       bottomNavigationBar: BottomAppBarWidget(),

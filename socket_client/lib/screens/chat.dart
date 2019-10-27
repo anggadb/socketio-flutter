@@ -11,8 +11,10 @@ import 'package:socket_client/models/chat.model.dart' as ChatModel;
 class Chat extends StatefulWidget {
   final arguments;
   final roomName;
+  final userId;
 
-  Chat({Key key, @required this.arguments, @required this.roomName})
+  Chat(
+      {Key key, @required this.arguments, @required this.roomName, this.userId})
       : super(key: key);
   @override
   _ChatState createState() => _ChatState();
@@ -22,11 +24,13 @@ class _ChatState extends State<Chat> {
   SocketIO socket =
       SocketIOManager().createSocketIO(DotEnv().env['SOCKET_URL'], '/chat');
   var chats = new List<ChatModel.Chat>();
+  bool visible = false;
 
   @override
   void initState() {
     super.initState();
     _getChatByRoom(widget.arguments);
+    _isOnline(widget.userId);
   }
 
   void _getChatByRoom(id) {
@@ -40,12 +44,30 @@ class _ChatState extends State<Chat> {
   }
 
   void _onTyping() {
-    socket.init();
-    socket.sendMessage('typing', '{"username": "Angga Bachtiar"}');
+    socket.sendMessage(
+        'typing', '{"username": "' + DotEnv().env['ACTIVE_USERNAME'] + '"}');
+  }
+
+  void _isOnline(int userId) {
+    socket.sendMessage(
+        'check-online', '{"userId": "' + userId.toString() + '"}');
+    socket.subscribe('check-online', _onlineRes);
+  }
+
+  void _onlineRes(dynamic data) {
+    if (data == true) {
+      setState(() {
+        visible = true;
+      });
+    } else {
+      setState(() {
+        visible = false;
+      });
+    }
   }
 
   Widget _nipLocator(int sender, String text) {
-    if (sender == 1) {
+    if (sender == int.parse(DotEnv().env['ACTIVE_ID'])) {
       return new Bubble(
         margin: BubbleEdges.only(top: 10),
         alignment: Alignment.topLeft,
@@ -68,15 +90,24 @@ class _ChatState extends State<Chat> {
     return Scaffold(
       appBar: AppBar(
         title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            new Text(widget.roomName),
             new Align(
-              alignment: Alignment.center,
               child: Text(
-                'ONLINE',
-                style: TextStyle(fontWeight: FontWeight.w200, fontSize: 15.0),
+                widget.roomName,
+                textAlign: TextAlign.center,
               ),
-            )
+            ),
+            new Visibility(
+                visible: visible,
+                child: Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      'ONLINE',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w200, fontSize: 15.0),
+                    )))
           ],
         ),
         actions: <Widget>[

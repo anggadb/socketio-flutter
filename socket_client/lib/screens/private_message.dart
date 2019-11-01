@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_socket_io/flutter_socket_io.dart';
 import 'package:flutter_socket_io/socket_io_manager.dart';
 
@@ -9,6 +8,7 @@ import '../widgets/bottom-app-bar.dart';
 import '../models/room_list.model.dart';
 import '../services/room.service.dart';
 import 'package:socket_client/screens/chat.dart';
+import 'package:socket_client/env.dart';
 
 class PrivateMessage extends StatefulWidget {
   @override
@@ -17,7 +17,7 @@ class PrivateMessage extends StatefulWidget {
 
 class _PrivateMessage extends State<PrivateMessage> {
   SocketIO socket =
-      SocketIOManager().createSocketIO(DotEnv().env['SOCKET_URL'], '/chat');
+      SocketIOManager().createSocketIO(Environment().socketUrl, '/chat');
   var privaterooms = new List<RoomList>();
 
   @override
@@ -31,14 +31,15 @@ class _PrivateMessage extends State<PrivateMessage> {
     socket.sendMessage(
         'activated',
         '{"userId": "' +
-            DotEnv().env['ACTIVE_ID'] +
+            Environment().activeId +
             '", "username": "' +
-            DotEnv().env['ACTIVE_USERNAME'] +
+            Environment().activeName +
             '"}');
   }
 
   void _getRooms() {
-    RoomService().getPrivateRooms(DotEnv().env['ACTIVE_ID']).then((res) {
+    RoomService().getPrivateRooms(Environment().activeId).then((res) {
+      print(res);
       setState(() {
         Iterable list = json.decode(res.body);
         privaterooms = list.map((model) => RoomList.fromJson(model)).toList();

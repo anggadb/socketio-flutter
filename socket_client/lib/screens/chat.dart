@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:bubble/bubble.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_socket_io/flutter_socket_io.dart';
 import 'package:flutter_socket_io/socket_io_manager.dart';
 
 import '../services/chat.service.dart';
 import 'package:socket_client/models/chat.model.dart' as ChatModel;
+import 'package:socket_client/models/reciever_info.dart';
+import 'package:socket_client/env.dart';
 
 class Chat extends StatefulWidget {
   final arguments;
@@ -22,15 +23,18 @@ class Chat extends StatefulWidget {
 
 class _ChatState extends State<Chat> {
   SocketIO socket =
-      SocketIOManager().createSocketIO(DotEnv().env['SOCKET_URL'], '/chat');
+      SocketIOManager().createSocketIO(Environment().socketUrl, '/chat');
   var chats = new List<ChatModel.Chat>();
+  var recieverInfo = new List<SocketInfo>();
   bool visible = false;
 
   @override
   void initState() {
     super.initState();
     _getChatByRoom(widget.arguments);
+    _getReciverInfo(widget.userId);
     _isOnline(widget.userId);
+    print(recieverInfo);
   }
 
   void _getChatByRoom(id) {
@@ -43,9 +47,22 @@ class _ChatState extends State<Chat> {
         });
   }
 
+  void _getReciverInfo(int id) {
+    socket.sendMessage('detail-user', '{"userId": "' + id.toString() + '"}');
+    socket.subscribe('detail-user', (data) => _recieverInfoRes(data));
+  }
+
+  void _recieverInfoRes(dynamic data) {
+    setState(() {
+      Iterable list = json.decode(data);
+      recieverInfo = list.map((model) => SocketInfo.fromJson(model)).toList();
+    });
+    socket.unSubscribe('detail-user');
+  }
+
   void _onTyping() {
     socket.sendMessage(
-        'typing', '{"username": "' + DotEnv().env['ACTIVE_USERNAME'] + '"}');
+        'typing', '{"username": "' + Environment().activeName + '"}');
   }
 
   void _isOnline(int userId) {
@@ -57,17 +74,18 @@ class _ChatState extends State<Chat> {
   void _onlineRes(dynamic data) {
     if (data == true) {
       setState(() {
-        visible = true;
+        this.visible = true;
       });
     } else {
       setState(() {
-        visible = false;
+        this.visible = false;
       });
     }
+    socket.unSubscribe('check-online');
   }
 
   Widget _nipLocator(int sender, String text) {
-    if (sender == int.parse(DotEnv().env['ACTIVE_ID'])) {
+    if (sender == int.parse(Environment().activeId)) {
       return new Bubble(
         margin: BubbleEdges.only(top: 10),
         alignment: Alignment.topLeft,
@@ -100,7 +118,7 @@ class _ChatState extends State<Chat> {
               ),
             ),
             new Visibility(
-                visible: visible,
+                visible: true,
                 child: Align(
                     alignment: Alignment.center,
                     child: Text(
